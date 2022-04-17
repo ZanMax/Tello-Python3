@@ -1,0 +1,8 @@
+command
+takeoff
+delay 4
+up 40
+delay 4
+down 40
+delay 4
+land

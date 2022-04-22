@@ -6,18 +6,28 @@ from djitellopy import tello
 from controller import move
 
 drone_speed = 60
+critical_temperature = 85
+takeoff_status = False
 
 drone = tello.Tello()
 drone.connect()
-
-drone.streamon()
-TakeOff_Status = False
 
 battery = drone.get_battery()
 print("Battery level:", battery, "%")
 
 if int(battery) < 25:
     print("--> Low battery level")
+    exit()
+
+temperature_low = drone.get_lowest_temperature()
+temperature_max = drone.get_highest_temperature()
+print("Temperature: {} - {} °C".format(temperature_low, temperature_max))
+
+if temperature_max >= critical_temperature:
+    print("--> Critical temperature")
+    exit()
+
+drone.streamon()
 
 while True:
 
@@ -29,21 +39,21 @@ while True:
     # cv2.putText(image, str(battery), (100, 50), font, 1, (0, 255, 0), 1, cv2.LINE_AA)
 
     key = cv2.waitKeyEx(1)
-    if key != -1:
-        print(key)
 
-    if TakeOff_Status:
+    if takeoff_status:
         mv = move(key, drone_speed)
         drone.send_rc_control(mv[0], mv[1], mv[2], mv[3])
         sleep(0.08)
 
     if key == ord('0'):
         drone.land()
-        TakeOff_Status = False
+        takeoff_status = False
 
     if key == ord('1'):
-        drone.takeoff()
-        TakeOff_Status = True
+        if not takeoff_status:
+            drone.takeoff()
+            sleep(1)
+            takeoff_status = True
 
     if key == ord('q'):
         drone.streamoff()
